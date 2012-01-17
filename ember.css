@@ -1,0 +1,131 @@
+   body {
+            background: #202020;
+        }
+        .sectionHead {
+            background: #808080;
+            border: 1px solid black;
+            padding-left: 10px;
+            margin-bottom: 3px;
+            margin-top: 3px;
+            cursor: pointer;
+        }
+        .sectionHead h1 {
+            color: white;
+            font-size:16px;
+            margin: 0px;
+            padding-bottom: 3px;
+        }
+        ._clearer {
+            clear: both;
+        }
+        
+        .hover {
+            border: 1px solid white;
+        }
+        .ember {
+            background-color: #333;
+            background-image: url(tabs/808080.png);
+            background-position: top left;
+            background-repeat: repeat-y;
+            border: 1px solid black;
+            padding: 5px;
+            padding-left: 30px;
+            padding-right: 30px;
+        }
+        
+        ._notes {
+            float: left;
+            width: 90%;
+            clear: both;
+        }
+        
+        ._toolbar div {
+            background: #333;
+            border: 1px solid black;
+            padding: 3px;
+            padding-left: 6px;
+            padding-right: 6px;
+            margin: 3px;
+            cursor: pointer;
+            float: left;
+            width: auto;
+            height: 32px;
+        }
+        ._logout {
+            float: right !important;
+        }
+        ._search {
+            float: right !important;
+        }
+        
+        ._toolbar div h1 {
+            color: white;
+            font-size:16px;
+            margin: 0px;
+        }
+        .ember h1 {
+            color: white;
+            font-size:16px;
+            margin: 0px;
+        }
+        .ember p {
+            margin: 0px;
+            color: white;
+            font-size:12px;
+        }
+        
+        .ember small{
+            display:none;
+        }
+        
+        button, input {
+            border: 1px solid white;
+            background: #333;
+            color: white;
+            margin: 4px;
+        }
+        
+        textarea {
+            border: 1px solid white;
+            background: #333;
+            color: white;
+            margin: 4px;
+            width:100%;
+
+        }
+        
+        .helper {
+            background: #444;
+            border: 1px solid black;
+            padding: 5px;
+            padding-left: 30px;
+            padding-right: 30px;
+            color: white;
+            font-size:18px;
+        }
+        
+     
+        
+        .success, .working, .error, .locked, label {
+            color: white;
+        }
+        
+        ._logo {
+            background: url(logo.png) top left no-repeat #202020;
+            height: 48px;
+        }
+        
+        ._login {
+            background: #333;
+            border: 1px solid black;
+            padding: 5px;
+            padding-left: 30px;
+            padding-right: 30px;
+        }
+        ._login h1 {
+            color: white;
+            font-size:16px;
+            margin: 0px;
+        }
+        
+        

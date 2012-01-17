@@ -1,0 +1,61 @@
+/*
+This document contains color-coding for the tabs.
+Please pay attention to the spaces. 
+Tabs that use more then one word have no spaces in them.
+It's .TabName SPACE .ember, and .TabNameNOSPACE.sectionHead
+*/
+
+.Ideas.sectionHead {
+    background-color: #005080;
+}
+
+.Ideas .ember {
+    background-image: url(tabs/005080.png);
+}
+
+.Notes.sectionHead {
+    background-color: #008080;
+}
+
+.Notes .ember {
+    background-image: url(tabs/008080.png);
+}
+
+.Design.sectionHead {
+    background-color: #f06000;
+}
+
+.Design .ember {
+    background-image: url(tabs/f06000.png);
+}
+
+.ToDo.sectionHead {
+    background-color: #f0c000;
+}
+
+.ToDo .ember {
+    background-image: url(tabs/f0c000.png);
+}
+
+.Resolved.sectionHead {
+    background-color: #008000;
+}
+
+.Resolved .ember {
+    background-image: url(tabs/008000.png);
+}
+.Goals.sectionHead {
+    background-color: #800090;
+}
+
+.Goals .ember {
+    background-image: url(tabs/800090.png);
+}
+
+.Bugs.sectionHead {
+    background-color: #800000;
+}
+
+.Bugs .ember {
+    background-image: url(tabs/800000.png);
+}
