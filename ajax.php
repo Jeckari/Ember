@@ -19,13 +19,13 @@
             die();
         }
         
-        if(empty($body) || trim($body).length == 0)
+        if(empty($body) || strlen(trim($body)) == 0)
             $body = "No text.";
             
-        if(empty($head) || trim($head).length == 0)
+        if(empty($head) || strlen(trim($head)) == 0)
             $head = "Note";
         
-        if(empty($cat) || trim($cat).length == 0)
+        if(empty($cat) || strlen(trim($cat)) == 0)
             $cat = "Unfiled";
             
         $data = array( 
