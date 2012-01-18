@@ -1,18 +1,9 @@
-  function encode_utf8( s )
-    {
-      return unescape( encodeURIComponent( s ) );
-    }
-
-    function decode_utf8( s )
-    {
-      return decodeURIComponent( escape( s ) );
-    }
-    jQuery.fn.center = function () {
-        this.css("position","absolute");
-        this.css("top", (($(window).height() - this.outerHeight()) / 2) + $(window).scrollTop() + "px");
-        this.css("left", (($(window).width() - this.outerWidth()) / 2) + $(window).scrollLeft() + "px");
-        return this;
-    }
+jQuery.fn.center = function () {
+    this.css("position","absolute");
+    this.css("top", (($(window).height() - this.outerHeight()) / 2) + $(window).scrollTop() + "px");
+    this.css("left", (($(window).width() - this.outerWidth()) / 2) + $(window).scrollLeft() + "px");
+    return this;
+}
 
 function touchHandler(event)
 {
@@ -93,7 +84,7 @@ function init_touch()
                             url: "drop.php",  
                             data: "id="+ itemID+"&cat="+myID,
                             success: function(){  
-                                $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});                                    
+                                $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});     
                             },
                         });
                 }
@@ -185,6 +176,13 @@ function init_touch()
                         $('div.working').fadeIn(200);
                     },
                     success: function(data){  
+                        if(!cat)
+                            cat="Unfiled";
+                        if(!body)
+                            body="No text.";
+                        if(!head)
+                            head="Note.";
+                        
                         new_note(head,body,cat,data);
                         $("form#noteform #head").val('');
                         $("form#noteform #body").val('');                        

@@ -12,21 +12,20 @@
         $body        = htmlentities(trim($_POST['body']),ENT_QUOTES, 'UTF-8');  
         $cat        = htmlentities(trim($_POST['cat']),ENT_QUOTES, 'UTF-8');  
 
-        
         $cat = ucwords(trim(strtolower($cat)));
         $head = ucwords(trim(strtolower($head)));
         
-        
-        if($cat == "Trash") //No sense creating something for the trash.
+        if($cat == "Trash" ) { //No sense creating something for the trash.
             die();
+        }
         
-        if(empty($body))
-            die();
-        
-        if(empty($head))
+        if(empty($body) || trim($body).length == 0)
+            $body = "No text.";
+            
+        if(empty($head) || trim($head).length == 0)
             $head = "Note";
         
-        if(empty($cat))
+        if(empty($cat) || trim($cat).length == 0)
             $cat = "Unfiled";
             
         $data = array( 
@@ -41,9 +40,10 @@
             $stmt->execute($data);
             $stmt->setFetchMode(PDO::FETCH_BOTH);    
             if($row = $stmt->fetch()) {
-                echo $row['id'];
-            }
+                echo $row[0];
+            } 
         } catch (PDOException $e) {
-            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            echo $e->getMessage();
+            die();
         }
 ?>

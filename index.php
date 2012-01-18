@@ -11,8 +11,8 @@
 	</head>
 <script type="text/javascript" src="./jquery-1.7.1.min.js"></script>
 <script type="text/javascript" src="./jquery-ui-1.8.17.custom.min.js"></script>
-<script type="text/javascript" src="./ember.js"></script>
 <script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.5.3-crypto-sha256.js"></script>
+<script type="text/javascript" src="./ember.js"></script>
 	<body>
     <div class="_logo" ></div>
     

@@ -29,7 +29,7 @@
                 echo PasswordResults::NoUser;
                 die();
             } catch (PDOException $e) {
-                file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+                echo $e->getMessage();
                 echo PasswordResults::NoUser;
                 die();
             }

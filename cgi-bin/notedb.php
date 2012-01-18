@@ -2,6 +2,21 @@
 include('config.php');
 
 $DBH = 0;
+
+
+ class PasswordResults {
+    const Failed = 0;
+    const NoUser = 1;
+    const Locked = 2;
+    const Success = 3;
+    const UserExists = 4;
+ }
+ 
+ class CreateNoteResults {
+    const Failed = 0;
+    const Success = 1;
+ }
+ 
  
 function setup_db() {
     global $DBH;
@@ -27,7 +42,7 @@ function setup_db() {
                 $stmt = $DBH->prepare("CREATE TABLE users (username VARCHAR(16), PRIMARY KEY(username), password VARCHAR(128), attempts TINYINT, attemptTime DATETIME)");
                 $stmt->execute();
             } catch (PDOException $e) {
-                file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+                echo $e->getMessage();  
             }
             
             create_user($default_user,$default_pass);    
@@ -41,7 +56,7 @@ function setup_db() {
                 $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL)");
                 $stmt->execute();
             } catch (PDOException $e) {
-                file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+                echo $e->getMessage();
             }
     
     }    
@@ -65,14 +80,6 @@ function format_html($content)
  }
  
   
- class PasswordResults {
-    const Failed = 0;
-    const NoUser = 1;
-    const Locked = 2;
-    const Success = 3;
-    const UserExists = 4;
- }
- 
  function create_user($username, $password){
     global $DBH;
     $username = ucwords(trim(strtolower($username)));
@@ -87,7 +94,7 @@ function format_html($content)
         $stmt = $DBH->prepare('INSERT INTO users (username, password) VALUES (:username, :password)');
         $stmt->execute($data);
     } catch (PDOException $e) {
-        file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+        echo $e->getMessage();
     }   
  }
  
@@ -105,7 +112,7 @@ function format_html($content)
         $row = $stmt->fetch();
         
     } catch (PDOException $e) {
-        file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+        echo $e->getMessage();
         return PasswordResults::NoUser;    
     }
     
@@ -117,7 +124,7 @@ function format_html($content)
             $stmt->execute($data);
         
         } catch (PDOException $e) {
-            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            echo $e->getMessage();
             return PasswordResults::NoUser;    
         }
         $attempts = 0;
@@ -148,7 +155,7 @@ function format_html($content)
             $stmt->execute($data);
         
         } catch (PDOException $e) {
-            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            echo $e->getMessage();
             return PasswordResults::Failed;    
         }
     }
@@ -196,7 +203,7 @@ function print_notes(){
             if($lastcat != "")
                 echo '</div>';
         } catch (PDOException $e) {
-            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            echo $e->getMessage();
             return;    
         }
         
