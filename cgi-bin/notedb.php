@@ -185,11 +185,11 @@ function format_html($content)
  
  function print_category($name, $count, $data) {
     $catfile = str_replace (" ", "", $name);
-    echo '<div class="'.$catfile.' core">';
+    echo '<div class="'.$catfile.' core droptarget" id="'.$name.'" >';
     $backimg = 'backs/'. urlencode($catfile) .'.png';
     if(!file_exists($backimg))
         $backimg = 'backs/Unfiled.png';
-    echo '<div class = "'.$catfile.' sectionHead droptarget" id="'.$name.'" >';
+    echo '<div class = "'.$catfile.' sectionHead"  >';
     echo '<h1>';
     echo $name;
     echo ' <span class = "count">(' . $count . ')</span>';

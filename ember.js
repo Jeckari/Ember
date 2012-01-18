@@ -63,9 +63,8 @@ function init_touch()
                 drop: function(event, ui) {
                     ui.helper.remove();
                     var itemID = ui.draggable.attr("id").substr(4);
-                    var myClass = $(this).attr("class");
-                    var myID = $(this).attr("id");
-                    var matches = myClass.split(/\b/);
+                    var section = $(this);
+                    var myID = section.attr("id");
                     if(myID != "Trash"){
                         //Decrease old count
                         var hits = ui.draggable.siblings().find("h1 .count");
@@ -74,7 +73,7 @@ function init_touch()
                             num = parseInt(hits.html().substr(1,hits.html().length-1));
                         hits.html('('+(num-1)+')');
                         
-                        ui.draggable.insertAfter(this);
+                        ui.draggable.insertAfter(section);
                         
                         //Increase new count
                         num = 0;
@@ -82,7 +81,7 @@ function init_touch()
                         if(hits.html().length && hits.html()[0] == '(')
                             num = parseInt(hits.html().substr(1,hits.html().length-1));
                         hits.html('('+(num+1)+')');
-                        $(this).siblings().show();
+                        section.siblings().show();
                         
                     } else {
                         hits = ui.draggable.siblings().find("h1 .count");
@@ -135,9 +134,9 @@ function init_touch()
  function make_expander(target){
     target.toggle(
                 function() { 
-                    $(this).siblings('div.ember').slideToggle(200); 
+                    $(this).siblings('div.ember').slideDown(200); 
                 }, function() { 
-                    $(this).siblings('div.ember').slideToggle(200); return false; 
+                    $(this).siblings('div.ember').slideUp(200); return false; 
                 }
             ); 
  }
@@ -147,17 +146,17 @@ function init_touch()
             if(!body) body = "No text.";
             if(!cat) cat = "Unfiled";
             
-            if ($('.'+cat.replace(/\s/g,'')).length == 0){
-                var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core"><div class="'+cat.replace(/\s/g,'')+' sectionHead droptarget" id="'+cat+'"><h1>'+cat+'<span class="count">(1)</span></h1></div></div>');
+            if (!$('.'+cat.replace(/\s/g,'')).length){
+                var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core droptarget" id="'+cat+'"><div class="'+cat.replace(/\s/g,'')+' sectionHead"><h1>'+cat+'<span class="count">(1)</span></h1></div></div>');
                 $('._newNote').after(newdiv);
-                make_expander($('div.sectionHead'));
-                make_droppable($('.droptarget'));
+                make_expander(newdiv);
+                make_droppable(newdiv);
             }            
             
-            var ember = $('<div class="ember" id="note'+id+'"><small>'+head+'</small><h1>'+head+'</h1><p>'+body+'</p></div>');
-            $('div.'+cat.replace(/\s/g,'')+'.core').append(ember);
+            var ember = $('<div class="ember" id="note'+id.toString()+'"><small>'+head+'</small><h1>'+head+'</h1><p>'+body+'</p></div>');
+            var core = $('div.'+cat.replace(/\s/g,'')+'.core');
+            core.append(ember);
             make_draggable(ember);
-            
             
             return ember;
  }
@@ -232,8 +231,7 @@ function init_touch()
                         var datacode = data[0];
                         data = data.substr(1);
                         if(datacode == '0'){ //Success!
-                            var note = new_note(head,body,cat,data);
-                            $('body, html').animate({ scrollTop: note.offset.top }, 1000);
+                            update_note(head,body,cat,parseInt(data));
                             $('div.'+cat.replace(/\s/g,'')+'.core div.ember').show(); 
                             $("form#noteform #head").val('');
                             $("form#noteform #body").val('');                        
@@ -306,8 +304,7 @@ function init_notes(){
  function update_note(head,body,cat,id){
             if($('#note'+id.toString())) //Note already exists, so move it.
                 $('#note'+id.toString()).remove();
-            new_note(head,body,cat,id);
-
+            return new_note(head,body,cat,id);
  }
 
  setInterval ( 
@@ -324,14 +321,16 @@ function init_notes(){
                         var datacode = data[0];
                         data = data.substr(1);
                         if(datacode == '0'){ //Success!
-                        var results = jQuery.parseJSON(data);
-                        for(var i=0;i<results.length;i++){
-                            var row = jQuery.parseJSON(results[i]);
-                            update_note(row[0],row[1],row[2],row[3]);
-                        }
-                        } else {
-                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
-                        }
+                            var results = jQuery.parseJSON(data);
+                            if(results) {
+                                for(var i=0;i<results.length;i++){
+                                    var row = jQuery.parseJSON(results[i]);
+                                    update_note(row[0],row[1],row[2],parseInt(row[3]));
+                                }
+                            }
+                            } else {
+                                $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
+                            }
                     },
                 }); 
         }
