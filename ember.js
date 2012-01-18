@@ -69,13 +69,19 @@ function init_touch()
                     if(myID != "Trash"){
                         //Decrease old count
                         var hits = ui.draggable.siblings().find("h1 .count");
-                        hits.html(parseInt(hits.html())-1);
+                        var num = 0;
+                        if(hits.html().length && hits.html()[0] == '(')
+                            num = parseInt(hits.html().substr(1,hits.html().length-1));
+                        hits.html('('+(num-1)+')');
                         
                         ui.draggable.insertAfter(this);
                         
                         //Increase new count
+                        num = 0;
                         hits = ui.draggable.siblings().find("h1 .count");
-                        hits.html(parseInt(hits.html())+1);
+                        if(hits.html().length && hits.html()[0] == '(')
+                            num = parseInt(hits.html().substr(1,hits.html().length-1));
+                        hits.html('('+(num+1)+')');
                         $(this).siblings().show();
                         
                     } else {
@@ -142,13 +148,13 @@ function init_touch()
             if(!cat) cat = "Unfiled";
             
             if ($('.'+cat.replace(/\s/g,'')).length == 0){
-                var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core"><div class="'+cat.replace(/\s/g,'')+' sectionHead droptarget" id="'+cat+'"><h1>'+cat+'</h1></div></div>');
+                var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core"><div class="'+cat.replace(/\s/g,'')+' sectionHead droptarget" id="'+cat+'"><h1>'+cat+'<span class="count">(1)</span></h1></div></div>');
                 $('._newNote').after(newdiv);
                 make_expander($('div.sectionHead'));
                 make_droppable($('.droptarget'));
             }            
             
-            var ember = $('<div class="ember" id="'+id+'"><small>'+head+'</small><h1>'+head+'</h1><p>'+body+'</p></div>');
+            var ember = $('<div class="ember" id="note'+id+'"><small>'+head+'</small><h1>'+head+'</h1><p>'+body+'</p></div>');
             $('div.'+cat.replace(/\s/g,'')+'.core').append(ember);
             make_draggable(ember);
             $('div.'+cat.replace(/\s/g,'')+'.core div.ember').show(); 

@@ -191,7 +191,7 @@ function format_html($content)
     echo '<div class = "'.$catfile.' sectionHead droptarget" id="'.$name.'" >';
     echo '<h1>';
     echo $name;
-    echo ' (<span class = "count">' . $count . '</span>)';
+    echo ' <span class = "count">(' . $count . ')</span>';
     echo '</h1></div>';
     echo $data;
     echo '</div>';
