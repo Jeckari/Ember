@@ -100,7 +100,7 @@ function init_touch()
                             success: function(data){  
                                 $('div.working').fadeOut(600);
                                 if(data == ""){ //Error: No data
-                                    $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                                    $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
                                     return;
                                 }
                                 
@@ -109,7 +109,7 @@ function init_touch()
                                 if(datacode == '0') { //Success!
                                     //TODO We should replace the moved/deleted note here.
                                 }  else {
-                                    $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                                    $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
                                     if(datacode == '2') {//SQL Error
                                         if(data != "")
                                         alert(data);
@@ -157,10 +157,9 @@ function init_touch()
             var ember = $('<div class="ember" id="note'+id+'"><small>'+head+'</small><h1>'+head+'</h1><p>'+body+'</p></div>');
             $('div.'+cat.replace(/\s/g,'')+'.core').append(ember);
             make_draggable(ember);
-            $('div.'+cat.replace(/\s/g,'')+'.core div.ember').show(); 
             
-            $('body, html').animate({ scrollTop: ember.offset().top }, 1000);
-
+            
+            return ember;
  }
  
   function activate_searchform() {
@@ -183,7 +182,7 @@ function init_touch()
                     success: function(data){  
                         $('div.working').fadeOut(600);
                         if(data == ""){ //Error: No data
-                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
                             return;
                         }
                         
@@ -199,8 +198,7 @@ function init_touch()
                             if(rows.length > 0)
                                 $('body, html').animate({ scrollTop: $('#note'+rows[0].trim()).offset().top }, 1000);
                         } else {
-                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);});
-                            alert(datacode);
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
                         }
                         
                     },
@@ -227,19 +225,22 @@ function init_touch()
                     success: function(data){  
                         $('div.working').fadeOut(200);
                         if(data == ""){ //Error: No data
-                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
                             return;
                         }
+
                         var datacode = data[0];
                         data = data.substr(1);
                         if(datacode == '0'){ //Success!
-                            new_note(head,body,cat,data);
+                            var note = new_note(head,body,cat,data);
+                            $('body, html').animate({ scrollTop: note.offset.top }, 1000);
+                            $('div.'+cat.replace(/\s/g,'')+'.core div.ember').show(); 
                             $("form#noteform #head").val('');
                             $("form#noteform #body").val('');                        
                             $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});                                    
                             return;
                         } else {
-                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
                             if(datacode == '2') {//SQL Error
                                 if(data != "")
                                 alert(data);
@@ -264,7 +265,7 @@ function init_touch()
                     success: function(data){  
                         $('div.working').fadeOut(200);
                         if(data == ""){ //Error: No data
-                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
                             return;
                         }
                         var datacode = data[0];
@@ -272,7 +273,7 @@ function init_touch()
                         if(datacode == '0'){ //Success!
                             window.location.reload(true);
                         } else {
-                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);});
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
                         }
                     },
                 });  
@@ -300,10 +301,46 @@ function init_notes(){
     activate_searchform();
     $('div.ember').hide(); 
 }
- 
+
+
+ function update_note(head,body,cat,id){
+            if($('#note'+id.toString())) //Note already exists, so move it.
+                $('#note'+id.toString()).remove();
+            new_note(head,body,cat,id);
+
+ }
+
+ setInterval ( 
+        function() {
+                 $.ajax({  
+                    type: "POST",  
+                    url: "ajax.php",  
+                    data: "act=poll",
+                    success: function(data){  
+                        if(data == ""){ //Error: No data
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
+                            return;
+                        }
+                        var datacode = data[0];
+                        data = data.substr(1);
+                        if(datacode == '0'){ //Success!
+                        var results = jQuery.parseJSON(data);
+                        for(var i=0;i<results.length;i++){
+                            var row = jQuery.parseJSON(results[i]);
+                            update_note(row[0],row[1],row[2],row[3]);
+                        }
+                        } else {
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
+                        }
+                    },
+                }); 
+        }
+    , 2500 );
+
 $(document).ready(
 
    
+    
 
     function() { 
     init_touch();

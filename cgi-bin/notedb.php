@@ -64,7 +64,7 @@ function setup_db() {
 
     if(!$hasNotes) {
         try {
-                $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL)");
+                $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL, created DATETIME, modified DATETIME)");
                 $stmt->execute();
             } catch (PDOException $e) {
                 echo $e->getMessage();
@@ -156,6 +156,7 @@ function format_html($content)
     
     if($hash == $row['password']) {
         $_SESSION['SESS_MEMBER_ID'] = $row['username'];
+        $_SESSION['SESS_LAST_POLL'] = strtotime("now");
          try {
             $stmt = $DBH->prepare('UPDATE users SET attempts = 0 WHERE username = :username');
             $stmt->execute($data);
@@ -200,7 +201,7 @@ function format_html($content)
 function print_notes(){
         global $DBH;
         try {
-            $stmt = $DBH->prepare('SELECT head, body, category, id FROM notes ORDER BY Category ASC');
+            $stmt = $DBH->prepare('SELECT head, body, category, id FROM notes ORDER BY category ASC, modified DESC');
             $stmt->execute();
             $stmt->setFetchMode(PDO::FETCH_ASSOC); 
             

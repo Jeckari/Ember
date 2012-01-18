@@ -56,8 +56,42 @@
             echo AjaxReturn::SecurityFail;
             die();
         }
-
-        if($act == "create") { //Create a new note
+        
+        if($act == "poll") { //Poll for new data
+            if(!isset($_SESSION['SESS_LAST_POLL']))
+                $_SESSION['SESS_LAST_POLL'] = strtotime("now");
+            
+            $data = array( 
+                'modified' => $_SESSION['SESS_LAST_POLL'],
+            );
+            
+            try {
+                $stmt = $DBH->prepare('SELECT head, body, category, id FROM notes WHERE modified > FROM_UNIXTIME(:modified)');
+                $stmt->execute($data);
+                $stmt->setFetchMode(PDO::FETCH_ASSOC); 
+                
+                echo AjaxReturn::Success;
+                $results = array();
+                
+                $count = 0;
+                while($row = $stmt->fetch()) {
+                        $count++;
+                        $ar = array($row['head'], $row['body'], $row['category'], $row['id']);
+                        array_push($results,json_encode($ar));
+                }
+                if($count > 0) {
+                    echo json_encode($results);
+                    $_SESSION['SESS_LAST_POLL'] = strtotime("now");
+                }
+                die();
+            }  catch (PDOException $e) {
+                echo AjaxReturn::SQLFail . $e->getMessage();
+                die();
+            }
+            
+            
+        }
+        else if($act == "create") { //Create a new note
             if(isset($_POST['head']))
                 $head = htmlentities(trim($_POST['head']),ENT_QUOTES, 'UTF-8');  
             if(isset($_POST['body']))
@@ -86,9 +120,10 @@
                 'head' => $head,
                 'cat' => $cat,
                 'body' => $body,
+                'created' => strtotime("now"),
             );
             try {
-                $stmt = $DBH->prepare('INSERT INTO notes (head,body,category) VALUES (:head,:body,:cat)');
+                $stmt = $DBH->prepare('INSERT INTO notes (head,body,category,created,modified) VALUES (:head,:body,:cat,FROM_UNIXTIME(:created),FROM_UNIXTIME(:created))');
                 $stmt->execute($data);
                 $stmt = $DBH->prepare('SELECT MAX(ID) FROM notes where head = :head');
                 $stmt->execute($data);
@@ -131,8 +166,9 @@
                     $data = array( 
                         'id' => $id,
                         'cat' => $cat,
+                        'modified' => strtotime("now")
                     );
-                    $stmt = $DBH->prepare('UPDATE notes SET category=:cat WHERE id=:id');
+                    $stmt = $DBH->prepare('UPDATE notes SET category=:cat, modified=FROM_UNIXTIME(:modified) WHERE id=:id');
                 }
                 $stmt->execute($data);
                 echo AjaxReturn::Success;
