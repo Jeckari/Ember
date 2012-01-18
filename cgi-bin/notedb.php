@@ -182,6 +182,21 @@ function format_html($content)
     return AjaxReturn::BadLogin;
  }
  
+ function print_category($name, $count, $data) {
+    $catfile = str_replace (" ", "", $name);
+    echo '<div class="'.$catfile.' core">';
+    $backimg = 'backs/'. urlencode($catfile) .'.png';
+    if(!file_exists($backimg))
+        $backimg = 'backs/Unfiled.png';
+    echo '<div class = "'.$catfile.' sectionHead droptarget" id="'.$name.'" >';
+    echo '<h1>';
+    echo $name;
+    echo ' (<span class = "count">' . $count . '</span>)';
+    echo '</h1></div>';
+    echo $data;
+    echo '</div>';
+ }
+ 
 function print_notes(){
         global $DBH;
         try {
@@ -190,38 +205,27 @@ function print_notes(){
             $stmt->setFetchMode(PDO::FETCH_ASSOC); 
             
             $lastcat = "";
-        
+            $catdata = "";
+            $catcount = 0;
             while($row = $stmt->fetch()) {
-                $catfile = str_replace (" ", "", $row['category']);
                 
-                if($row['category'] != $lastcat) {//New category
-                    if($lastcat != "")
-                            echo '</div>';
-                    echo '<div class="'.$catfile.' core">';
-                    $backimg = 'backs/'. urlencode($catfile) .'.png';
-                    if(!file_exists($backimg))
-                        $backimg = 'backs/Unfiled.png';
-                    echo '<div class = "'.$catfile.' sectionHead droptarget" id="'.$row['category'].'" >';
-                    echo '<h1>';
-                    echo $row['category'];
-                    echo '</h1></div>';
+                if($row['category'] != $lastcat && $lastcat != "") {//New category
+                    print_category($lastcat,$catcount,$catdata);
+                    $catdata = "";
+                    $catcount = 0;
+                    
                 }
                 
-                $embimg = 'tabs/'. urlencode($catfile) .'.png';
-                if(!file_exists($backimg)) {
-                    $embimg = 'tabs/Unfiled.png';
-                    }
-                        
-                echo '<div class = "ember" id="note'.$row['id'].'" >';
-                echo '<small>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</small>';
-                echo '<h1>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</h1>';
-                echo format_html(html_entity_decode($row['body'],ENT_QUOTES, 'UTF-8'));
-                echo '</div>';
-                
-                $lastcat = $row['category'];
+                $catcount += 1;
+                $lastcat = $row['category'];                        
+                $catdata = $catdata . '<div class = "ember" id="note'.$row['id'].'" >';
+                $catdata = $catdata . '<small>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</small>';
+                $catdata = $catdata . '<h1>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</h1>';
+                $catdata = $catdata . format_html(html_entity_decode($row['body'],ENT_QUOTES, 'UTF-8'));
+                $catdata = $catdata . '</div>';
             }
             if($lastcat != "")
-                echo '</div>';
+                print_category($lastcat, $catcount, $catdata);
         } catch (PDOException $e) {
             echo $e->getMessage();
             return;    

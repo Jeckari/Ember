@@ -67,9 +67,20 @@ function init_touch()
                     var myID = $(this).attr("id");
                     var matches = myClass.split(/\b/);
                     if(myID != "Trash"){
+                        //Decrease old count
+                        var hits = ui.draggable.siblings().find("h1 .count");
+                        hits.html(parseInt(hits.html())-1);
+                        
                         ui.draggable.insertAfter(this);
-                        $(this).siblings().show(); 
+                        
+                        //Increase new count
+                        hits = ui.draggable.siblings().find("h1 .count");
+                        hits.html(parseInt(hits.html())+1);
+                        $(this).siblings().show();
+                        
                     } else {
+                        hits = ui.draggable.siblings().find("h1 .count");
+                        hits.html(parseInt(hits.html())-1);                        
                         ui.draggable.remove();
                     }     
                       

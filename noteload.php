@@ -22,34 +22,35 @@
             </form>  
         </div>
     </div>
-        <div class="_clearer">
-        </div>
+    <div class="_clearer">
+    </div>
+    <div class="_workarea">
+        <div class="_newNote">  
+                <div class = "sectionHead" style="background: #808080;">
+                    <h1>New Note</h1>
+                </div>
+                <div class = "ember">
+                    <form id="noteform" method="post">  
+                        <TEXTAREA id="cat" NAME="cat" ROWS=1 COLS=12 placeholder="Unfiled"></TEXTAREA> <br/>
+                        <TEXTAREA id="head" NAME="head" ROWS=1 COLS=48 placeholder="Note Header"></TEXTAREA> 
+                        <TEXTAREA id="body" NAME="body" ROWS=3 COLS=64 placeholder="Note Body"></TEXTAREA> <br/>
+                        <button> Add Note </button>  
+                    </form>  
+                </div>
 
-<div class="_newNote">  
-        <div class = "sectionHead" style="background: #808080;">
-            <h1>New Note</h1>
+                <div class="success" style="display: none;">Database updated.</div>  
+                <div class="error" style="display: none;">An error has occured.</div>  
+                <div class="working" style="display: none;">Working. Please wait...</div>  
         </div>
-        <div class = "ember">
-            <form id="noteform" method="post">  
-                <TEXTAREA id="cat" NAME="cat" ROWS=1 COLS=12 placeholder="Unfiled"></TEXTAREA> <br/>
-                <TEXTAREA id="head" NAME="head" ROWS=1 COLS=48 placeholder="Note Header"></TEXTAREA> 
-                <TEXTAREA id="body" NAME="body" ROWS=3 COLS=64 placeholder="Note Body"></TEXTAREA> <br/>
-                <button> Add Note </button>  
-            </form>  
+        <?php 
+                print_notes();
+        ?>
+        <div class="_trash">  
+                <div class = "sectionHead droptarget" id="Trash" style="background: #808080;">
+                    <h1>Trash</h1>
+                </div>
         </div>
-
-        <div class="success" style="display: none;">Database updated.</div>  
-        <div class="error" style="display: none;">An error has occured.</div>  
-        <div class="working" style="display: none;">Working. Please wait...</div>  
-</div>
-<?php 
-        print_notes();
-?>
-<div class="_trash">  
-        <div class = "sectionHead droptarget" id="Trash" style="background: #808080;">
-            <h1>Trash</h1>
-        </div>
-</div>
+    </div>
 <?php 
         } //End secure
 ?>
