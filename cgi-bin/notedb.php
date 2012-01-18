@@ -1,6 +1,52 @@
 <?php 
 include('config.php');
 
+$DBH = 0;
+ 
+function setup_db() {
+    global $DBH;
+    global $db_type, $db_database, $db_host, $db_database, $db_user, $db_pass;
+    global $default_user, $default_pass;
+     try {  
+     if($db_type == "sqlite")
+        $DBH = new PDO("sqlite:$db_database");  
+     else
+        $DBH = new PDO("$db_type:host=$db_host;dbname=$db_database", $db_user, $db_pass);  
+    } catch(PDOException $e) {  
+        echo $e->getMessage();  
+        die();
+    }  
+
+
+    try {
+        $stmt = $DBH->prepare("SELECT 1 from users");
+    } catch (PDOException $e) {
+        //Failed to prepare, so users doesn't exist
+        //TODO: Code checking
+        try {
+                $stmt = $DBH->prepare("CREATE TABLE users (username VARCHAR(16), PRIMARY KEY(username), password VARCHAR(128), attempts TINYINT, attemptTime DATETIME)");
+                $stmt->execute();
+            } catch (PDOException $e) {
+                file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            }
+            
+            create_user($default_user,$default_pass);    
+    }
+    
+    try {
+        $stmt = $DBH->prepare("SELECT 1 from notes");
+    } catch (PDOException $e) {
+        //Failed to prepare, so notes doesn't exist
+        try {
+                $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL)");
+                $stmt->execute();
+            } catch (PDOException $e) {
+                file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            }
+    
+    }    
+}
+
 function format_html($content)
  {
   $content = "<p>" . str_replace("\n", "<br/>", $content) . "";
@@ -28,106 +74,137 @@ function format_html($content)
  }
  
  function create_user($username, $password){
+    global $DBH;
     $username = ucwords(trim(strtolower($username)));
     $saltypassword = hash_password($username,$password);
-    $username        = mysql_real_escape_string(htmlentities($username,ENT_QUOTES, 'UTF-8'));
+    $username        = htmlentities($username,ENT_QUOTES, 'UTF-8');
     
-    $sql = 'INSERT INTO users (username, password) VALUES ("'.$username.'", "'.$saltypassword.'")';
-    $q = mysql_query($sql);
+    $data = array( 
+        'username' => $username,
+        'password' => $saltypassword,
+    );
+    try {
+        $stmt = $DBH->prepare('INSERT INTO users (username, password) VALUES (:username, :password)');
+        $stmt->execute($data);
+    } catch (PDOException $e) {
+        file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+    }   
  }
  
  function attempt_login($username, $saltypassword) {
-    $sql = 'SELECT password, attempts, UNIX_TIMESTAMP(attemptTime), username FROM users WHERE username = "' . mysql_real_escape_string($username) . '"';
-    $q = mysql_query($sql);
-
-    if(!$q)
+    global $DBH;
+    global $max_attempts;
+    $data = array( 
+        'username' => $username,
+    );
+    try {
+        $stmt = $DBH->prepare('SELECT password, attempts, UNIX_TIMESTAMP(attemptTime), username FROM users WHERE username = :username');
+        $stmt->execute($data);
+        
+        $stmt->setFetchMode(PDO::FETCH_ASSOC);
+        $row = $stmt->fetch();
+        
+    } catch (PDOException $e) {
+        file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
         return PasswordResults::NoUser;    
+    }
     
-    $r = mysql_fetch_assoc($q);
-    
-    $attempts = $r[1];
+    $attempts = $row['attempts'];
     
     if($r[2] < strtotime("-1 hour")){ //More than an hour ago.
-        $sql = 'UPDATE users SET attempts = 0 WHERE username = "' . mysql_real_escape_string($username) . '"';
-        mysql_query($sql);
+        try {
+            $stmt = $DBH->prepare('UPDATE users SET attempts = 0 WHERE username = :username');
+            $stmt->execute($data);
+        
+        } catch (PDOException $e) {
+            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            return PasswordResults::NoUser;    
+        }
         $attempts = 0;
     }
     
-    if($attempts > 5)
+    if($attempts > max_attempts) {
         return PasswordResults::Locked;
+    }
     
-    $salt = substr($r['password'], 0, 64);
+    $salt = substr($row['password'], 0, 64);
     $hash = $saltypassword;
     for($i=0;$i<256;$i++){
         $hash = hash('sha256',$hash);    
     }
     $hash = $salt.$hash;
     
-    if($hash == $r['password']) {
-        $_SESSION['SESS_MEMBER_ID'] = $r['username'];
+    if($hash == $row['password']) {
+        $_SESSION['SESS_MEMBER_ID'] = $row['username'];
         return PasswordResults::Success;
     }
     else {
-        $sql = 'UPDATE users SET attempts = attempts + 1, attemptTime = FROM_UNIXTIME(' . strtotime("now") . ') WHERE username = "' . mysql_real_escape_string($username) . '"';
-        mysql_query($sql);
+         $data = array( 
+            'username' => $username,
+            'time' => strtotime("now"),
+        );
+        try {
+            $stmt = $DBH->prepare('UPDATE users SET attempts = attempts + 1, attemptTime = FROM_UNIXTIME(:time) WHERE username = :username');
+            $stmt->execute($data);
+        
+        } catch (PDOException $e) {
+            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            return PasswordResults::Failed;    
+        }
     }
     return PasswordResults::Failed;
  }
  
- function print_notes(){
-  $sql = "SELECT head, body, category, id FROM notes ORDER BY Category ASC";
-        $result = mysql_query($sql);
-        $lastcat = "";
+function print_notes(){
+        global $DBH;
+        try {
+            $stmt = $DBH->prepare('SELECT head, body, category, id FROM notes ORDER BY Category ASC');
+            $stmt->execute();
+            $stmt->setFetchMode(PDO::FETCH_ASSOC); 
+            
+            $lastcat = "";
         
-        if(!$result){
-            mysql_error();//Empty table
-        }
-        else
-        while($row = mysql_fetch_array($result)){
-            $catfile = str_replace (" ", "", $row[2]);
-            if($row[2] != $lastcat) {//New category
-                if($lastcat != "")
-                        echo '</div>';
-                echo '<div class="'.$catfile.' core">';
-                $backimg = 'backs/'. urlencode($catfile) .'.png';
-                if(!file_exists($backimg))
-                    $backimg = 'backs/Unfiled.png';
-                echo '<div class = "'.$catfile.' sectionHead droptarget" id="'.$row[2].'" >';
-                echo '<h1>';
-                echo $row[2];
-                echo '</h1></div>';
-            }
-            
-            $embimg = 'tabs/'. urlencode($catfile) .'.png';
-            if(!file_exists($backimg)) {
-                $embimg = 'tabs/Unfiled.png';
+            while($row = $stmt->fetch()) {
+                $catfile = str_replace (" ", "", $row['category']);
+                
+                if($row['category'] != $lastcat) {//New category
+                    if($lastcat != "")
+                            echo '</div>';
+                    echo '<div class="'.$catfile.' core">';
+                    $backimg = 'backs/'. urlencode($catfile) .'.png';
+                    if(!file_exists($backimg))
+                        $backimg = 'backs/Unfiled.png';
+                    echo '<div class = "'.$catfile.' sectionHead droptarget" id="'.$row['category'].'" >';
+                    echo '<h1>';
+                    echo $row['category'];
+                    echo '</h1></div>';
                 }
-                    
-            echo '<div class = "ember" id="note'.$row[3].'" >';
-            echo '<small>' . html_entity_decode($row[0],ENT_QUOTES, 'UTF-8') . '</small>';
-            echo '<h1>' . html_entity_decode($row[0],ENT_QUOTES, 'UTF-8') . '</h1>';
-            echo format_html(html_entity_decode($row[1],ENT_QUOTES, 'UTF-8'));
-            echo '</div>';
-            
-            $lastcat = $row[2];
+                
+                $embimg = 'tabs/'. urlencode($catfile) .'.png';
+                if(!file_exists($backimg)) {
+                    $embimg = 'tabs/Unfiled.png';
+                    }
+                        
+                echo '<div class = "ember" id="note'.$row['id'].'" >';
+                echo '<small>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</small>';
+                echo '<h1>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</h1>';
+                echo format_html(html_entity_decode($row['body'],ENT_QUOTES, 'UTF-8'));
+                echo '</div>';
+                
+                $lastcat = $row['category'];
+            }
+            if($lastcat != "")
+                echo '</div>';
+        } catch (PDOException $e) {
+            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+            return;    
         }
-        if($lastcat != "")
-            echo '</div>';
+        
+        
  }
  
- // Connects to your Database 
-    mysql_connect($db_host, $db_user, $db_pass) or die(mysql_error());     
-    mysql_select_db($db_database) or die(mysql_error());
-    
-    //Comment this out after your table has been created.
-    $sql="CREATE TABLE users (username VARCHAR(16), PRIMARY KEY(username), password VARCHAR(128), attempts TINYINT, attemptTime DATETIME)";
-    @mysql_query($sql);
-    $sql="CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL)";
-    @mysql_query($sql);
-    //Comment this out after your user has been created.
-    create_user($default_user,$default_pass);
-    
+    setup_db();
     mb_language('uni');
-    mb_internal_encoding('UTF-8');
+    mb_internal_encoding('UTF-8');    
     
  ?>

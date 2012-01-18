@@ -12,13 +12,18 @@
         if(empty($text))
             die();
             
-        $sql  = "SELECT id from notes WHERE UPPER(body) LIKE UPPER('%$text%') or UPPER(head) like ('%$text%') ";  
-        $result = mysql_query($sql);
-        if(!$result){
-            mysql_error();//Empty table
-        }
-        else while($row = mysql_fetch_array($result)){
-            
-            echo ' '.$row[0];
-        }
+        $data = array( 
+            'text' => '%'.$text.'%'
+        );
+        try {
+            $stmt = $DBH->prepare('SELECT id from notes WHERE UPPER(body) LIKE UPPER(:text) or UPPER(head) like UPPER(:text) or UPPER(category) like UPPER(:text)');
+            $stmt->execute($data);
+        
+            $stmt->setFetchMode(PDO::FETCH_ASSOC);    
+            while($row = $stmt->fetch()) {  
+                echo ' '.$row['id'];  
+            }  
+        } catch (PDOException $e) {
+            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+        }   
 ?>

@@ -13,12 +13,19 @@
         
         if(empty($id) || empty($cat))
             die();
-            
-        if($cat == "Trash") {
-            $addNote  = "DELETE from notes WHERE id='$id'";  
-        } else {
-            $addNote  = "UPDATE notes SET category='$cat' WHERE id='$id'";  
-        }
-        mysql_query($addNote) or die(mysql_error());  
-      
+
+        $data = array( 
+            'id' => $id,
+            'cat' => $cat,
+        );
+        try {
+            if($cat == "Trash") {
+                $stmt = $DBH->prepare('DELETE from notes WHERE id=:id');
+            } else {
+                $stmt = $DBH->prepare('UPDATE notes SET category=:cat WHERE id=:id');
+            }
+            $stmt->execute($data);
+        } catch (PDOException $e) {
+            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
+        }   
 ?>

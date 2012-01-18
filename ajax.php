@@ -17,10 +17,6 @@
         $head = ucwords(trim(strtolower($head)));
         
         
-        $body = mysql_real_escape_string($body);
-        $head = mysql_real_escape_string($head);
-        $cat = mysql_real_escape_string($cat);
-        
         if($cat == "Trash") //No sense creating something for the trash.
             die();
         
@@ -33,12 +29,21 @@
         if(empty($cat))
             $cat = "Unfiled";
             
-        
-        $addNote  = "INSERT INTO notes (head,body,category) VALUES ('$head','$body','$cat')";  
-        mysql_query($addNote) or die(mysql_error());  
-        $result = mysql_query("SELECT MAX(ID) FROM notes where head = '$head'");
-        if($result){
-            $row = mysql_fetch_array($result);
-            echo $row[0];
+        $data = array( 
+            'head' => $head,
+            'cat' => $cat,
+            'body' => $body,
+        );
+        try {
+            $stmt = $DBH->prepare('INSERT INTO notes (head,body,category) VALUES (:head,:body,:cat)');
+            $stmt->execute($data);
+            $stmt = $DBH->prepare('SELECT MAX(ID) FROM notes where head = :head');
+            $stmt->execute($data);
+            $stmt->setFetchMode(PDO::FETCH_BOTH);    
+            if($row = $stmt->fetch()) {
+                echo $row['id'];
+            }
+        } catch (PDOException $e) {
+            file_put_contents('./PDOErrors.txt', $e->getMessage(), FILE_APPEND);
         }
 ?>
