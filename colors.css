@@ -59,3 +59,11 @@ It's .TabName SPACE .ember, and .TabNameNOSPACE.sectionHead
 .Bugs .ember {
     background-image: url(tabs/800000.png);
 }
+
+.Urgent.sectionHead {
+    background-color: #f06000;
+}
+
+.Urgent .ember {
+    background-image: url(tabs/f06000.png);
+}

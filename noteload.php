@@ -39,7 +39,7 @@
         </div>
 
         <div class="success" style="display: none;">Database updated.</div>  
-        <div class="error" style="display: none;">Database error.</div>  
+        <div class="error" style="display: none;">An error has occured.</div>  
         <div class="working" style="display: none;">Working. Please wait...</div>  
 </div>
 <?php 

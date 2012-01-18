@@ -3,20 +3,16 @@ include('config.php');
 
 $DBH = 0;
 
-
- class PasswordResults {
-    const Failed = 0;
-    const NoUser = 1;
-    const Locked = 2;
-    const Success = 3;
-    const UserExists = 4;
- }
- 
- class CreateNoteResults {
-    const Failed = 0;
-    const Success = 1;
- }
- 
+//Return codes:
+class AjaxReturn {
+    const Success = 0;
+    const SecurityFail = 1;
+    const SQLFail = 2;
+    const UnknownAction = 3;
+    const MalformedAction = 4;
+    const BadLogin = 5;
+    const LockedLogin = 6;
+};
  
 function setup_db() {
     global $DBH;
@@ -33,33 +29,48 @@ function setup_db() {
     }  
 
 
-    try {
-        $stmt = $DBH->prepare("SELECT 1 from users");
-    } catch (PDOException $e) {
-        //Failed to prepare, so users doesn't exist
-        //TODO: Code checking
-        try {
-                $stmt = $DBH->prepare("CREATE TABLE users (username VARCHAR(16), PRIMARY KEY(username), password VARCHAR(128), attempts TINYINT, attemptTime DATETIME)");
-                $stmt->execute();
-            } catch (PDOException $e) {
-                echo $e->getMessage();  
-            }
-            
-            create_user($default_user,$default_pass);    
-    }
+    
+    //Check for table existence.
+    $hasUsers = false;
+    $hasNotes = false;
     
     try {
-        $stmt = $DBH->prepare("SELECT 1 from notes");
+        $stmt = $DBH->prepare("SHOW TABLES");
+        $stmt->execute();
+        
+        $stmt->setFetchMode(PDO::FETCH_BOTH);
+        while($row = $stmt->fetch()){
+            $tabname = strtolower($row[0]);
+            switch($tabname){
+                case "users": $hasUsers = true; break;
+                case "notes": $hasNotes = true; break;
+            }
+        }
+        
     } catch (PDOException $e) {
-        //Failed to prepare, so notes doesn't exist
+        echo $e->getMessage();
+    }
+    
+    if(!$hasUsers){
+        try {
+            $stmt = $DBH->prepare("CREATE TABLE users (username VARCHAR(16), PRIMARY KEY(username), password VARCHAR(128), attempts TINYINT, attemptTime DATETIME)");
+            $stmt->execute();
+        } catch (PDOException $e) {
+            echo $e->getMessage();  
+        }
+        
+        create_user($default_user,$default_pass);    
+    }
+
+    if(!$hasNotes) {
         try {
                 $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL)");
                 $stmt->execute();
             } catch (PDOException $e) {
                 echo $e->getMessage();
             }
+    }
     
-    }    
 }
 
 function format_html($content)
@@ -101,39 +112,41 @@ function format_html($content)
  function attempt_login($username, $saltypassword) {
     global $DBH;
     global $max_attempts;
+    
     $data = array( 
         'username' => $username,
     );
+    
+    //Check how many attempts they've made
     try {
         $stmt = $DBH->prepare('SELECT password, attempts, UNIX_TIMESTAMP(attemptTime), username FROM users WHERE username = :username');
         $stmt->execute($data);
         
-        $stmt->setFetchMode(PDO::FETCH_ASSOC);
+        $stmt->setFetchMode(PDO::FETCH_BOTH);
         $row = $stmt->fetch();
         
     } catch (PDOException $e) {
-        echo $e->getMessage();
-        return PasswordResults::NoUser;    
+        return AjaxReturn::SQLFail . $e->getMessage();   
     }
     
     $attempts = $row['attempts'];
     
-    if($r[2] < strtotime("-1 hour")){ //More than an hour ago.
+    if($r[2] > strtotime("-1 hour")){ //More than an hour ago.
         try {
             $stmt = $DBH->prepare('UPDATE users SET attempts = 0 WHERE username = :username');
             $stmt->execute($data);
         
         } catch (PDOException $e) {
-            echo $e->getMessage();
-            return PasswordResults::NoUser;    
+            return AjaxReturn::SQLFail . $e->getMessage();    
         }
         $attempts = 0;
     }
     
-    if($attempts > max_attempts) {
-        return PasswordResults::Locked;
+    if($attempts > $max_attempts) {
+        return AjaxReturn::LockedLogin;
     }
     
+    //Check password
     $salt = substr($row['password'], 0, 64);
     $hash = $saltypassword;
     for($i=0;$i<256;$i++){
@@ -143,9 +156,17 @@ function format_html($content)
     
     if($hash == $row['password']) {
         $_SESSION['SESS_MEMBER_ID'] = $row['username'];
-        return PasswordResults::Success;
+         try {
+            $stmt = $DBH->prepare('UPDATE users SET attempts = 0 WHERE username = :username');
+            $stmt->execute($data);
+        
+        } catch (PDOException $e) {
+            //Do nothing here, because we logged in. So we can't reset the attempt count. So what.
+        }
+        $attempts = 0;
+        return AjaxReturn::Success;
     }
-    else {
+    else { 
          $data = array( 
             'username' => $username,
             'time' => strtotime("now"),
@@ -155,11 +176,10 @@ function format_html($content)
             $stmt->execute($data);
         
         } catch (PDOException $e) {
-            echo $e->getMessage();
-            return PasswordResults::Failed;    
+            return AjaxReturn::SQLFail . $e->getMessage();    
         }
     }
-    return PasswordResults::Failed;
+    return AjaxReturn::BadLogin;
  }
  
 function print_notes(){

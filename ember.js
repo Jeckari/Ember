@@ -61,34 +61,47 @@ function init_touch()
                         $(this).removeClass('hover');
                 },
                 drop: function(event, ui) {
-                      
-                        //var item_id = $(ui.draggable).attr('id');
-                      ui.helper.remove();
-                      var itemID = ui.draggable.attr("id").substr(4);
-                      var myClass = $(this).attr("class");
-                      var myID = $(this).attr("id");
-                      var matches = myClass.split(/\b/);
-
-                      
-                      if(myID != "Trash"){
+                    ui.helper.remove();
+                    var itemID = ui.draggable.attr("id").substr(4);
+                    var myClass = $(this).attr("class");
+                    var myID = $(this).attr("id");
+                    var matches = myClass.split(/\b/);
+                    if(myID != "Trash"){
                         ui.draggable.insertAfter(this);
                         $(this).siblings().show(); 
-                      } else {
+                    } else {
                         ui.draggable.remove();
-                      }
+                    }     
                       
-                      //alert("id="+ itemID+"&cat="+myID);
-                      
-                      $.ajax({  
+                    $.ajax({  
                             type: "POST",  
-                            url: "drop.php",  
-                            data: "id="+ itemID+"&cat="+myID,
-                            success: function(){  
-                                $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});     
+                            url: "ajax.php",  
+                            data: "act=move&id="+ itemID+"&cat="+myID,
+                            beforeSend: function() {
+                                $('div.working').fadeIn(200);
                             },
-                        });
+                            success: function(data){  
+                                $('div.working').fadeOut(600);
+                                if(data == ""){ //Error: No data
+                                    $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                                    return;
+                                }
+                                
+                                var datacode = data[0];
+                                data = data.substr(1);
+                                if(datacode == '0') { //Success!
+                                    //TODO We should replace the moved/deleted note here.
+                                }  else {
+                                    $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                                    if(datacode == '2') {//SQL Error
+                                        if(data != "")
+                                        alert(data);
+                                    }
+                                }
+                            },
+                    });
                 }
-                }); 
+    }); 
  }
  
  function make_draggable(target){
@@ -113,6 +126,10 @@ function init_touch()
  }
  
  function new_note(head,body,cat,id){
+            if(!head) head = "Note";
+            if(!body) body = "No text.";
+            if(!cat) cat = "Unfiled";
+            
             if ($('.'+cat.replace(/\s/g,'')).length == 0){
                 var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core"><div class="'+cat.replace(/\s/g,'')+' sectionHead droptarget" id="'+cat+'"><h1>'+cat+'</h1></div></div>');
                 $('._newNote').after(newdiv);
@@ -135,24 +152,39 @@ function init_touch()
             $("form#searchform").submit(function() {  
             // we want to store the values from the form input box, then send via ajax below  
             var text     = $('#searchtext').attr('value');      
-            
+            if(text == ""){
+                $('div.ember').hide();
+                return;
+            }
                 $.ajax({  
                     type: "POST",  
-                    url: "search.php",  
-                    data: "text="+ text,  
+                    url: "ajax.php",  
+                    data: "act=search&text="+ text,  
                     beforeSend: function() {
                         $('div.working').fadeIn(200);
                     },
                     success: function(data){  
                         $('div.working').fadeOut(600);
-                        $('div.ember').hide();
-                        var rows = data.split(' ');
-                        for(var i in rows) {
-                             if(rows[i].trim().length > 0)
-                                $('#note'+rows[i].trim()).show();
+                        if(data == ""){ //Error: No data
+                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            return;
                         }
-                        if(rows.length > 0)
-                            $('body, html').animate({ scrollTop: $('#note'+rows[0].trim()).offset().top }, 1000);
+                        
+                        var datacode = data[0];
+                        data = data.substr(1);
+                        if(datacode == '0'){ //Success!
+                            $('div.ember').hide();
+                            var rows = data.split(' ');
+                            for(var i in rows) {
+                                 if(rows[i].trim().length > 0)
+                                    $('#note'+rows[i].trim()).show();
+                            }
+                            if(rows.length > 0)
+                                $('body, html').animate({ scrollTop: $('#note'+rows[0].trim()).offset().top }, 1000);
+                        } else {
+                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);});
+                            alert(datacode);
+                        }
                         
                     },
                 });  
@@ -171,23 +203,32 @@ function init_touch()
                 $.ajax({  
                     type: "POST",  
                     url: "ajax.php",  
-                    data: "head="+ head +"&body="+ body + "&cat="+ cat,  
+                    data: "act=create&head="+ head +"&body="+ body + "&cat="+ cat,  
                     beforeSend: function() {
                         $('div.working').fadeIn(200);
                     },
                     success: function(data){  
-                        if(!cat)
-                            cat="Unfiled";
-                        if(!body)
-                            body="No text.";
-                        if(!head)
-                            head="Note.";
-                        
-                        new_note(head,body,cat,data);
-                        $("form#noteform #head").val('');
-                        $("form#noteform #body").val('');                        
                         $('div.working').fadeOut(200);
-                        $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});                                    
+                        if(data == ""){ //Error: No data
+                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            return;
+                        }
+                        var datacode = data[0];
+                        data = data.substr(1);
+                        if(datacode == '0'){ //Success!
+                            new_note(head,body,cat,data);
+                            $("form#noteform #head").val('');
+                            $("form#noteform #body").val('');                        
+                            $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});                                    
+                            return;
+                        } else {
+                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            if(datacode == '2') {//SQL Error
+                                if(data != "")
+                                alert(data);
+                            }
+                        }
+                        
                     },
                 });  
                 
@@ -198,9 +239,24 @@ function init_touch()
  function do_logout() {
                 $.ajax({  
                     type: "POST",  
-                    url: "logout.php",  
+                    url: "ajax.php",  
+                    data: "act=logout",
+                    beforeSend: function() {
+                        $('div.working').fadeIn(200);
+                    },
                     success: function(data){  
-                        window.location.reload(true);
+                        $('div.working').fadeOut(200);
+                        if(data == ""){ //Error: No data
+                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                            return;
+                        }
+                        var datacode = data[0];
+                        data = data.substr(1);
+                        if(datacode == '0'){ //Success!
+                            window.location.reload(true);
+                        } else {
+                            $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);});
+                        }
                     },
                 });  
  }
@@ -249,46 +305,71 @@ $(document).ready(
             //First get salt
                 $.ajax({  
                     type: "POST",  
-                    url: "login.php",  
-                    data: "username="+ username +"&password=0",  
+                    url: "ajax.php",  
+                    data: "act=login&user="+ username,  
                     beforeSend: function(data) {
                         $('div.working').fadeIn(200);
                     },
                     success: function(data){  
+                        $('div.working').fadeOut(200);
+                        if(data == ""){ //Error: No data
+                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);}); 
+                            return;
+                        }
+                        var datacode = data[0];
+                        data = data.substr(1);
                         
-                        
-                        var saltypassword = Crypto.SHA256(data.trim()+password, { asBits: true });
-                        $.ajax({  
-                            type: "POST",  
-                            url: "login.php",  
-                            data: "username="+ username +"&password="+ saltypassword,  
-                            beforeSend: function() {
-                                $('div.working').fadeIn(200);
-                            },
-                            success: function(data){                             
-                                
-                                $('div.working').fadeOut(200);
-                                if(data == "3") {
-                                    $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});     
-                                    $('div._login').fadeOut(1200);
-                                    //AJAX grabbing of notes
-                                    $.ajax({  
-                                        type: "POST",  
-                                        url: "noteload.php",  
-                                        success: function(data){ 
-                                            $('._login').after(data); 
-                                            init_notes();
-                                        },
-                                    });  
-                                }
-                                else if(data == "2")
-                                    $('div.locked').fadeIn(600,function(){$('div.locked').fadeOut(1200);});                                    
-                                else if(data == "1")
-                                    $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});                                     
-                                else 
-                                    $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});                                    
-                            },
-                        });  
+                        if(datacode == '0') {
+                            var saltypassword = Crypto.SHA256(data.trim()+password, { asBits: true });
+                            $.ajax({  
+                                type: "POST",  
+                                url: "ajax.php",  
+                                data: "act=login&user="+ username +"&pass="+ saltypassword,  
+                                beforeSend: function() {
+                                    $('div.working').fadeIn(200);
+                                },
+                                success: function(data){                             
+                                    $('div.working').fadeOut(200);
+                                    if(data == ""){ //Error: No data
+                                        $('div.error').fadeIn(600,function(){$('div.success').fadeOut(1200);}); 
+                                        return;
+                                    }
+                                    var datacode = data[0];
+                                    data = data.substr(1);
+                                    if(datacode == '0'){ //Success!
+                                        $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});     
+                                        $('div._login').fadeOut(1200);
+                                        //AJAX grabbing of notes
+                                        $.ajax({  
+                                            type: "POST",  
+                                            url: "noteload.php",  
+                                            success: function(data){ 
+                                                $('._login').after(data); 
+                                                init_notes();
+                                            },
+                                        });  
+                                    } else {
+                                        if(datacode == '4') 
+                                            $('div.malformed').fadeIn(600,function(){$('div.malformed').fadeOut(1200);});
+                                        else if(datacode == '5') //Bad Login
+                                            $('div.badlogin').fadeIn(600,function(){$('div.badlogin').fadeOut(1200);});
+                                        else if(datacode == '6')
+                                            $('div.locked').fadeIn(600,function(){$('div.locked').fadeOut(1200);});
+                                        else
+                                            $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
+                                    }
+                            
+                                },
+                            });  
+                        } else {
+                            if(datacode == '4') 
+                                $('div.malformed').fadeIn(600,function(){$('div.malformed').fadeOut(1200);});
+                            else if(datacode == '5') //Bad Login
+                                $('div.badlogin').fadeIn(600,function(){$('div.badlogin').fadeOut(1200);});
+                            else
+                                $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
+                                        
+                        }
                     },
                 });  
                 

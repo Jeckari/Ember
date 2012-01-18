@@ -31,7 +31,9 @@
         <button> Submit </button>  
     </form>  
     <div class="success" style="display: none;">Successfully logged in.</div>  
-    <div class="error" style="display: none;">Incorrect username or password.</div>  
+    <div class="malformed" style="display: none;">Please enter both a username and a password.</div>  
+    <div class="badlogin" style="display: none;">Incorrect username or password.</div>  
+    <div class="error" style="display: none;">An error has occurred.</div>  
     <div class="locked" style="display: none;">Account locked. Please wait an hour.</div>  
     </div>
             
