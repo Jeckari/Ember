@@ -125,13 +125,14 @@
             try {
                 $stmt = $DBH->prepare('INSERT INTO notes (head,body,category,created,modified) VALUES (:head,:body,:cat,FROM_UNIXTIME(:created),FROM_UNIXTIME(:created))');
                 $stmt->execute($data);
-                $stmt = $DBH->prepare('SELECT MAX(ID) FROM notes where head = :head');
+                $stmt = $DBH->prepare('SELECT MAX(id) as maxid FROM notes');
                 $stmt->execute($data);
-                $stmt->setFetchMode(PDO::FETCH_BOTH);    
+                $stmt->setFetchMode(PDO::FETCH_ASSOC);    
                 echo AjaxReturn::Success;
                 if($row = $stmt->fetch()) {
-                    echo $row[0];
+                    echo $row['maxid'];
                 } 
+                die();
             } catch (PDOException $e) {
                 echo AjaxReturn::SQLFail . $e->getMessage();
                 die();
