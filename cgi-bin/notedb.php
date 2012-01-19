@@ -33,6 +33,7 @@ function setup_db() {
     //Check for table existence.
     $hasUsers = false;
     $hasNotes = false;
+    $hasBooks = false;
     
     try {
         $stmt = $DBH->prepare("SHOW TABLES");
@@ -44,6 +45,7 @@ function setup_db() {
             switch($tabname){
                 case "users": $hasUsers = true; break;
                 case "notes": $hasNotes = true; break;
+                case "books": $hasBooks = true; break;
             }
         }
         
@@ -53,7 +55,7 @@ function setup_db() {
     
     if(!$hasUsers){
         try {
-            $stmt = $DBH->prepare("CREATE TABLE users (username VARCHAR(16), PRIMARY KEY(username), password VARCHAR(128), attempts TINYINT, attemptTime DATETIME)");
+            $stmt = $DBH->prepare("CREATE TABLE users (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), username VARCHAR(16), password VARCHAR(128), attempts TINYINT, attemptTime DATETIME)");
             $stmt->execute();
         } catch (PDOException $e) {
             echo $e->getMessage();  
@@ -64,7 +66,15 @@ function setup_db() {
 
     if(!$hasNotes) {
         try {
-                $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL, created DATETIME, modified DATETIME)");
+                $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL, bookID INT NOT NULL, created DATETIME, modified DATETIME)");
+                $stmt->execute();
+            } catch (PDOException $e) {
+                echo $e->getMessage();
+            }
+    }
+    if(!$hasBooks) {
+        try {
+                $stmt = $DBH->prepare("CREATE TABLE books (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), name VARCHAR(128))");
                 $stmt->execute();
             } catch (PDOException $e) {
                 echo $e->getMessage();
@@ -119,7 +129,7 @@ function format_html($content)
     
     //Check how many attempts they've made
     try {
-        $stmt = $DBH->prepare('SELECT password, attempts, UNIX_TIMESTAMP(attemptTime), username FROM users WHERE username = :username');
+        $stmt = $DBH->prepare('SELECT password, attempts, UNIX_TIMESTAMP(attemptTime), username, id FROM users WHERE username = :username');
         $stmt->execute($data);
         
         $stmt->setFetchMode(PDO::FETCH_BOTH);
@@ -155,7 +165,8 @@ function format_html($content)
     $hash = $salt.$hash;
     
     if($hash == $row['password']) {
-        $_SESSION['SESS_MEMBER_ID'] = $row['username'];
+        $_SESSION['SESS_MEMBER_ID'] = $row['id'];
+        $_SESSION['SESS_MEMBER_NAME'] = $row['username'];
         $_SESSION['SESS_LAST_POLL'] = strtotime("now");
          try {
             $stmt = $DBH->prepare('UPDATE users SET attempts = 0 WHERE username = :username');
@@ -165,7 +176,7 @@ function format_html($content)
             //Do nothing here, because we logged in. So we can't reset the attempt count. So what.
         }
         $attempts = 0;
-        return AjaxReturn::Success;
+        return AjaxReturn::Success . $row['username'];
     }
     else { 
          $data = array( 
@@ -201,7 +212,7 @@ function format_html($content)
 function print_notes(){
         global $DBH;
         try {
-            $stmt = $DBH->prepare('SELECT head, body, category, id FROM notes ORDER BY category ASC, modified DESC');
+            $stmt = $DBH->prepare('SELECT head, body, category, notes.id, users.username FROM notes INNER JOIN users on notes.userID = users.id ORDER BY category ASC, modified DESC');
             $stmt->execute();
             $stmt->setFetchMode(PDO::FETCH_ASSOC); 
             
@@ -222,6 +233,7 @@ function print_notes(){
                 $catdata = $catdata . '<div class = "ember" id="note'.$row['id'].'" >';
                 $catdata = $catdata . '<small>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</small>';
                 $catdata = $catdata . '<h1>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</h1>';
+                $catdata = $catdata . '<h2>' . html_entity_decode($row['username'],ENT_QUOTES, 'UTF-8') . '</h2>';
                 $catdata = $catdata . format_html(html_entity_decode($row['body'],ENT_QUOTES, 'UTF-8'));
                 $catdata = $catdata . '</div>';
             }

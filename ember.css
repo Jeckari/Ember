@@ -65,8 +65,15 @@
         }
         .ember h1 {
             color: white;
+            border-bottom: 1px solid gray;
             font-size:16px;
             margin: 0px;
+        }
+        .ember h2 {
+            float: right;
+            color: white;
+            font-size:14px;
+            margin: 0px;  
         }
         .ember p {
             margin: 0px;

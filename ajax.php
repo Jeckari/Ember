@@ -66,7 +66,7 @@
             );
             
             try {
-                $stmt = $DBH->prepare('SELECT head, body, category, id FROM notes WHERE modified > FROM_UNIXTIME(:modified)');
+                $stmt = $DBH->prepare('SELECT head, body, category, notes.id, users.username FROM notes INNER JOIN users ON notes.userID = users.id WHERE modified > FROM_UNIXTIME(:modified)');
                 $stmt->execute($data);
                 $stmt->setFetchMode(PDO::FETCH_ASSOC); 
                 
@@ -76,7 +76,7 @@
                 $count = 0;
                 while($row = $stmt->fetch()) {
                         $count++;
-                        $ar = array($row['head'], $row['body'], $row['category'], $row['id']);
+                        $ar = array($row['head'], $row['body'], $row['category'], $row['id'], $row['username']);
                         array_push($results,json_encode($ar));
                 }
                 if($count > 0) {
@@ -115,15 +115,16 @@
             
             if(empty($cat) || strlen(trim($cat)) == 0)
                 $cat = "Unfiled";
-                
+            
             $data = array( 
                 'head' => $head,
                 'cat' => $cat,
                 'body' => $body,
                 'created' => strtotime("now"),
+                'userID' => $_SESSION['SESS_MEMBER_ID'],
             );
             try {
-                $stmt = $DBH->prepare('INSERT INTO notes (head,body,category,created,modified) VALUES (:head,:body,:cat,FROM_UNIXTIME(:created),FROM_UNIXTIME(:created))');
+                $stmt = $DBH->prepare('INSERT INTO notes (head,body,category,created,modified,userID) VALUES (:head,:body,:cat,FROM_UNIXTIME(:created),FROM_UNIXTIME(:created),:userID)');
                 $stmt->execute($data);
                 $stmt = $DBH->prepare('SELECT MAX(id) as maxid FROM notes');
                 $stmt->execute($data);

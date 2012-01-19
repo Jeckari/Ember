@@ -1,3 +1,5 @@
+var myUsername;
+
 jQuery.fn.center = function () {
     this.css("position","absolute");
     this.css("top", (($(window).height() - this.outerHeight()) / 2) + $(window).scrollTop() + "px");
@@ -66,26 +68,11 @@ function init_touch()
                     var section = $(this);
                     var myID = section.attr("id");
                     if(myID != "Trash"){
-                        //Decrease old count
-                        var hits = ui.draggable.siblings().find("h1 .count");
-                        var num = 0;
-                        if(hits.html().length && hits.html()[0] == '(')
-                            num = parseInt(hits.html().substr(1,hits.html().length-1));
-                        hits.html('('+(num-1)+')');
-                        
+                        increment_count(ui.draggable,-1);                    
                         ui.draggable.insertAfter(section);
-                        
-                        //Increase new count
-                        num = 0;
-                        hits = ui.draggable.siblings().find("h1 .count");
-                        if(hits.html().length && hits.html()[0] == '(')
-                            num = parseInt(hits.html().substr(1,hits.html().length-1));
-                        hits.html('('+(num+1)+')');
-                        section.siblings().show();
-                        
+                        increment_count(ui.draggable,+1);                    
                     } else {
-                        hits = ui.draggable.siblings().find("h1 .count");
-                        hits.html(parseInt(hits.html())-1);                        
+                        increment_count(ui.draggable,-1);                                         
                         ui.draggable.remove();
                     }     
                       
@@ -141,25 +128,49 @@ function init_touch()
             ); 
  }
  
- function new_note(head,body,cat,id){
-            if(!head) head = "Note";
-            if(!body) body = "No text.";
-            if(!cat) cat = "Unfiled";
-            
-            if (!$('.'+cat.replace(/\s/g,'')).length){
-                var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core droptarget" id="'+cat+'"><div class="'+cat.replace(/\s/g,'')+' sectionHead"><h1>'+cat+'<span class="count">(1)</span></h1></div></div>');
-                $('._newNote').after(newdiv);
-                make_expander(newdiv);
-                make_droppable(newdiv);
-            }            
-            
-            var ember = $('<div class="ember" id="note'+id.toString()+'"><small>'+head+'</small><h1>'+head+'</h1><p>'+body+'</p></div>');
-            var core = $('div.'+cat.replace(/\s/g,'')+'.core');
-            core.append(ember);
-            make_draggable(ember);
-            
-            return ember;
+ function increment_count(ember, amount){
+    if(!ember)
+        return;
+    var num = 0;
+    var hits = ember.parent(".core").find("h1 .count");
+    if(hits && hits.html()) {
+            if(hits.html().length && hits.html()[0] == '(')
+                            num = parseInt(hits.html().substr(1,hits.html().length-1));
+            hits.html('('+(num+amount)+')');
+    }        
  }
+ 
+ function update_note(head,body,cat,id,username){
+    var ember = $('#note'+id.toString());
+    if(ember) { //Note already exists, so move it.
+        increment_count(ember,-1);
+        ember.remove();
+    }
+    
+    if(!head) head = "Note";
+    if(!body) body = "No text.";
+    if(!cat) cat = "Unfiled";
+    
+    if (!$('div.'+cat.replace(/\s/g,'.core')).length){
+        var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core droptarget" id="'+cat+'"><div class="'+cat.replace(/\s/g,'')+' sectionHead"><h1>'+cat+'<span class="count">(1)</span></h1></div></div>');
+        $('div._newNote').after(newdiv);
+        make_expander(newdiv);
+        make_droppable(newdiv);
+    }            
+    
+    var ember = $('<div class="ember" id="note'+id.toString()+'"><small>'+head+'</small><h1>'+head+'</h1><h2>'+username+'</h2><p>'+body+'</p></div>');
+    var section = $('div.'+cat.replace(/\s/g,'')+'.core');
+    
+    section.append(ember);
+    increment_count(ember,+1);                    
+    
+    make_draggable(ember);
+    ember.show();
+    
+    return ember;
+ }
+
+ 
  
   function activate_searchform() {
  
@@ -231,7 +242,7 @@ function init_touch()
                         var datacode = data[0];
                         data = data.substr(1);
                         if(datacode == '0'){ //Success!
-                            update_note(head,body,cat,parseInt(data));
+                            update_note(head,body,cat,parseInt(data),window.myUsername);
                             $('div.'+cat.replace(/\s/g,'')+'.core div.ember').show(); 
                             $("form#noteform #head").val('');
                             $("form#noteform #body").val('');                        
@@ -301,12 +312,6 @@ function init_notes(){
 }
 
 
- function update_note(head,body,cat,id){
-            if($('#note'+id.toString())) //Note already exists, so move it.
-                $('#note'+id.toString()).remove();
-            return new_note(head,body,cat,id);
- }
-
  setInterval ( 
         function() {
                  $.ajax({  
@@ -325,11 +330,12 @@ function init_notes(){
                             if(results) {
                                 for(var i=0;i<results.length;i++){
                                     var row = jQuery.parseJSON(results[i]);
-                                    update_note(row[0],row[1],row[2],parseInt(row[3]));
+                                    update_note(row[0],row[1],row[2],parseInt(row[3]),row[4]);
                                 }
                             }
                             } else {
-                                $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
+                                if(datacode != '1') //If we're not a security failure...
+                                    $('div.error').fadeIn(600,function(){$('div.error').fadeOut(1200);});
                             }
                     },
                 }); 
@@ -337,11 +343,9 @@ function init_notes(){
     , 2500 );
 
 $(document).ready(
-
-   
-    
-
     function() { 
+    
+    myUsername = "me";
     init_touch();
     $('div._login').center();
     init_notes();
@@ -390,6 +394,7 @@ $(document).ready(
                                     var datacode = data[0];
                                     data = data.substr(1);
                                     if(datacode == '0'){ //Success!
+                                        window.myUsername = data;
                                         $('div.success').fadeIn(600,function(){$('div.success').fadeOut(1200);});     
                                         $('div._login').fadeOut(1200);
                                         //AJAX grabbing of notes
