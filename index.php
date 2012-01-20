@@ -27,7 +27,7 @@
     <h1>Login</h1>
     <form id="loginform" method="post">  
         <label for="username">Username:</label><input id="username" type="text" name="username" /><br/>
-        <label for="password">Password:</label><input id="password" type="text" name="password" /><br/>
+        <label for="password">Password:</label><input id="password" type="password" name="password" /><br/>
         <button> Submit </button>  
     </form>  
     <div class="success" style="display: none;">Successfully logged in.</div>  
