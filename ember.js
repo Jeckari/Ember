@@ -67,6 +67,8 @@ function init_touch()
                     var itemID = ui.draggable.attr("id").substr(4);
                     var section = $(this);
                     var myID = section.attr("id");
+                    if(myID.substr(0,3) == "cat")
+                        myID = myID.substr(3);
                     if(myID != "Trash"){
                         increment_count(ui.draggable,-1);                    
                         ui.draggable.insertAfter(section);
@@ -144,7 +146,7 @@ function init_touch()
     var ember = $('#note'+id.toString());
     if(ember) { //Note already exists, so move it.
         increment_count(ember,-1);
-        ember.remove();
+        ember.empty().remove();
     }
     
     if(!head) head = "Note";

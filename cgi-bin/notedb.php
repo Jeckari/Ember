@@ -63,10 +63,9 @@ function setup_db() {
         
         create_user($default_user,$default_pass);    
     }
-
     if(!$hasNotes) {
         try {
-                $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, category VARCHAR(128), userID INT NOT NULL, bookID INT NOT NULL, created DATETIME, modified DATETIME)");
+                $stmt = $DBH->prepare("CREATE TABLE notes (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), head VARCHAR(128), body TEXT, userID INT NOT NULL, bookID INT NOT NULL, created DATETIME, modified DATETIME)");
                 $stmt->execute();
             } catch (PDOException $e) {
                 echo $e->getMessage();
@@ -76,11 +75,38 @@ function setup_db() {
         try {
                 $stmt = $DBH->prepare("CREATE TABLE books (id INT NOT NULL AUTO_INCREMENT,  PRIMARY KEY(id), name VARCHAR(128))");
                 $stmt->execute();
+                $stmt = $DBH->prepare("INSERT INTO books (id, name) values (1,'Unfiled')");
+                $stmt->execute();
             } catch (PDOException $e) {
                 echo $e->getMessage();
             }
     }
-    
+}
+
+function create_book($bookname){
+    global $DBH;
+    try {
+                $data = array(
+                    'name' => $bookname
+                );
+                $stmt = $DBH->prepare("SELECT id FROM books where name = :name");
+                $stmt->execute($data);
+                if($stmt->rowCount() == 0){
+                    $stmt = $DBH->prepare("INSERT INTO books (name) values (:name)");
+                    $stmt->execute($data);
+                    $stmt = $DBH->prepare("SELECT id FROM books where name = :name");
+                    $stmt->execute($data);
+                }
+                if($stmt->rowCount() == 0)
+                    return 1;
+                
+                $stmt->setFetchMode(PDO::FETCH_BOTH);
+                $row = $stmt->fetch();
+                return $row['id'];
+    } catch (PDOException $e) {
+        echo $e->getMessage();
+    }
+    return 1;
 }
 
 function format_html($content)
@@ -194,12 +220,26 @@ function format_html($content)
     return AjaxReturn::BadLogin;
  }
  
- function print_category($name, $count, $data) {
-    $catfile = str_replace (" ", "", $name);
-    echo '<div class="'.$catfile.' core droptarget" id="'.$name.'" >';
-    $backimg = 'backs/'. urlencode($catfile) .'.png';
-    if(!file_exists($backimg))
-        $backimg = 'backs/Unfiled.png';
+ function print_category($id, $count, $data) {
+    global $DBH;
+    try {
+        $mydata = array(
+            'id' => $id
+        );
+        $stmt = $DBH->prepare('SELECT name FROM books WHERE id = :id');
+        $stmt->execute($mydata);
+        $stmt->setFetchMode(PDO::FETCH_ASSOC); 
+        $row = $stmt->fetch();
+        if($row) {
+            $name = $row['name'];
+        }
+    } catch (PDOException $e) {
+            return AjaxReturn::SQLFail . $e->getMessage();    
+    }
+    
+    $catfile = str_replace (" ", "", $name);    
+    echo '<div class="'.$catfile.' core droptarget" id="cat'.$id.'" >';
+
     echo '<div class = "'.$catfile.' sectionHead"  >';
     echo '<h1>';
     echo $name;
@@ -212,24 +252,24 @@ function format_html($content)
 function print_notes(){
         global $DBH;
         try {
-            $stmt = $DBH->prepare('SELECT head, body, category, notes.id, users.username FROM notes INNER JOIN users on notes.userID = users.id ORDER BY category ASC, modified DESC');
+            $stmt = $DBH->prepare('SELECT head, body, bookID, notes.id, users.username FROM notes INNER JOIN users on notes.userID = users.id ORDER BY bookID ASC, modified DESC');
             $stmt->execute();
             $stmt->setFetchMode(PDO::FETCH_ASSOC); 
             
             $lastcat = "";
             $catdata = "";
             $catcount = 0;
+            
             while($row = $stmt->fetch()) {
                 
-                if($row['category'] != $lastcat && $lastcat != "") {//New category
+                if($row['bookID'] != $lastcat && $lastcat != "") {//New category
                     print_category($lastcat,$catcount,$catdata);
                     $catdata = "";
                     $catcount = 0;
-                    
                 }
                 
                 $catcount += 1;
-                $lastcat = $row['category'];                        
+                $lastcat = $row['bookID'];                        
                 $catdata = $catdata . '<div class = "ember" id="note'.$row['id'].'" >';
                 $catdata = $catdata . '<small>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</small>';
                 $catdata = $catdata . '<h1>' . html_entity_decode($row['head'],ENT_QUOTES, 'UTF-8') . '</h1>';

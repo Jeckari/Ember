@@ -66,7 +66,7 @@
             );
             
             try {
-                $stmt = $DBH->prepare('SELECT head, body, category, notes.id, users.username FROM notes INNER JOIN users ON notes.userID = users.id WHERE modified > FROM_UNIXTIME(:modified)');
+                $stmt = $DBH->prepare('SELECT head, body, bookID, notes.id, users.username, books.name as bookname FROM notes INNER JOIN users ON notes.userID = users.id JOIN books ON notes.bookID = books.ID WHERE modified > FROM_UNIXTIME(:modified)');
                 $stmt->execute($data);
                 $stmt->setFetchMode(PDO::FETCH_ASSOC); 
                 
@@ -76,7 +76,7 @@
                 $count = 0;
                 while($row = $stmt->fetch()) {
                         $count++;
-                        $ar = array($row['head'], $row['body'], $row['category'], $row['id'], $row['username']);
+                        $ar = array($row['head'], $row['body'], $row['bookname'], $row['id'], $row['username'], $row['bookID']);
                         array_push($results,json_encode($ar));
                 }
                 if($count > 0) {
@@ -99,13 +99,13 @@
             if(isset($_POST['cat']))
                 $cat = htmlentities(trim($_POST['cat']),ENT_QUOTES, 'UTF-8');  
 
-            $cat = ucwords(trim(strtolower($cat)));
-            $head = ucwords(trim(strtolower($head)));
-            
             if($cat == "Trash" ) { //No sense creating something for the trash.
                 echo AjaxReturn::MalformedAction;
                 die();
             }
+            $cat = create_book(ucwords(trim(strtolower($cat))));
+            $head = ucwords(trim(strtolower($head)));
+            
             
             if(empty($body) || strlen(trim($body)) == 0)
                 $body = "No text.";
@@ -113,18 +113,19 @@
             if(empty($head) || strlen(trim($head)) == 0)
                 $head = "Note";
             
-            if(empty($cat) || strlen(trim($cat)) == 0)
-                $cat = "Unfiled";
+            if(empty($cat))
+                $cat = 0;
             
             $data = array( 
                 'head' => $head,
-                'cat' => $cat,
+                'bookID' => $cat,
                 'body' => $body,
                 'created' => strtotime("now"),
+                'modified' => strtotime("now"),
                 'userID' => $_SESSION['SESS_MEMBER_ID'],
             );
             try {
-                $stmt = $DBH->prepare('INSERT INTO notes (head,body,category,created,modified,userID) VALUES (:head,:body,:cat,FROM_UNIXTIME(:created),FROM_UNIXTIME(:created),:userID)');
+                $stmt = $DBH->prepare('INSERT INTO notes (head,body,bookID,created,modified,userID) VALUES (:head,:body,:bookID,FROM_UNIXTIME(:created),FROM_UNIXTIME(:modified),:userID)');
                 $stmt->execute($data);
                 $stmt = $DBH->prepare('SELECT MAX(id) as maxid FROM notes');
                 $stmt->execute($data);
@@ -167,10 +168,10 @@
                     }
                     $data = array( 
                         'id' => $id,
-                        'cat' => $cat,
+                        'bookID' => $cat,
                         'modified' => strtotime("now")
                     );
-                    $stmt = $DBH->prepare('UPDATE notes SET category=:cat, modified=FROM_UNIXTIME(:modified) WHERE id=:id');
+                    $stmt = $DBH->prepare('UPDATE notes SET bookID=:bookID, modified=FROM_UNIXTIME(:modified) WHERE id=:id');
                 }
                 $stmt->execute($data);
                 echo AjaxReturn::Success;
@@ -198,7 +199,7 @@
                 'text' => '%'.$text.'%'
             );
             try {
-                $stmt = $DBH->prepare('SELECT id from notes WHERE UPPER(body) LIKE UPPER(:text) or UPPER(head) like UPPER(:text) or UPPER(category) like UPPER(:text)');
+                $stmt = $DBH->prepare('SELECT id from notes WHERE UPPER(body) LIKE UPPER(:text) or UPPER(head) like UPPER(:text)');
                 $stmt->execute($data);
             
                 $stmt->setFetchMode(PDO::FETCH_ASSOC);    
