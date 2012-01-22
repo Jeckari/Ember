@@ -142,7 +142,7 @@ function init_touch()
     }        
  }
  
- function update_note(head,body,cat,id,username){
+ function update_note(head,body,cat,id,username,bookid){
     var ember = $('#note'+id.toString());
     if(ember) { //Note already exists, so move it.
         increment_count(ember,-1);
@@ -153,8 +153,8 @@ function init_touch()
     if(!body) body = "No text.";
     if(!cat) cat = "Unfiled";
     
-    if (!$('div.'+cat.replace(/\s/g,'.core')).length){
-        var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core droptarget" id="'+cat+'"><div class="'+cat.replace(/\s/g,'')+' sectionHead"><h1>'+cat+'<span class="count">(1)</span></h1></div></div>');
+    if (!$('div#cat'+bookid).length){
+        var newdiv = $('<div class="'+cat.replace(/\s/g,'')+' core droptarget" id="cat'+bookid+'"><div class="'+cat.replace(/\s/g,'')+' sectionHead"><h1>'+cat+'<span class="count">(0)</span></h1></div></div>');
         $('div._newNote').after(newdiv);
         make_expander(newdiv);
         make_droppable(newdiv);
@@ -244,7 +244,7 @@ function init_touch()
                         var datacode = data[0];
                         data = data.substr(1);
                         if(datacode == '0'){ //Success!
-                            update_note(head,body,cat,parseInt(data),window.myUsername);
+                            //update_note(head,body,cat,parseInt(data),window.myUsername); We let the poll update this.
                             $('div.'+cat.replace(/\s/g,'')+'.core div.ember').show(); 
                             $("form#noteform #head").val('');
                             $("form#noteform #body").val('');                        
@@ -332,7 +332,7 @@ function init_notes(){
                             if(results) {
                                 for(var i=0;i<results.length;i++){
                                     var row = jQuery.parseJSON(results[i]);
-                                    update_note(row[0],row[1],row[2],parseInt(row[3]),row[4]);
+                                    update_note(row[0],row[1],row[2],parseInt(row[3]),row[4],row[5]);
                                 }
                             }
                             } else {
